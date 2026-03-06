@@ -1,0 +1,44 @@
+//1.Data Collection & Pre-processing
+import datetime
+def deploy_model(model_id, model_version, owner_email):
+    """Logs the owner of a deployed AI model."""
+    metadata = {
+        "model_id": model_id"version": model_version"deployed_by": owner_email"deployment_time": datetime.datetime.now().isoformat()"status": "Production"
+    }
+    # In practice, save this to a database or JSON log file
+    print(f"Accountability Log: {metadata}")
+    return metadata
+deploy_model("loan_classifier_v4""1.2.0""data_science_team_leads@company.com")
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+df = pd.read_csv("loan_applications.csv")
+print(df['gender'].value_counts(normalize=True))
+print(df['race'].value_counts(normalize=True))
+df['income'].fillna(df['income'].median(), inplace=True)
+train, test = train_test_split(df, test_size=0.2, stratify=df['approved'])
+
+// Model Training & Development
+from fairlearn.reductions import ExponentiatedGradient, DemographicParity
+from sklearn.linear_model import LogisticRegression
+sensitive_features = train['gender']
+classifier = LogisticRegression()
+mitigator = ExponentiatedGradient(classifier, constraints=DemographicParity())
+mitigator.fit(train.drop('approved', axis=1), train['approved'], sensitive_features=sensitive_features)
+
+//Model Evaluation & Audit
+from fairlearn.metrics import demographic_parity_difference, selection_rate
+y_pred = mitigator.predict(test.drop('approved', axis=1))
+dp_diff = demographic_parity_difference(
+    test['approved'], y_pred, sensitive_features=test['gender']
+)
+print(f"Demographic Parity Difference: {dp_diff:.4f}")
+
+//DEPLOYMENT
+def monitor_production_model(current_data, model):
+    accuracy = evaluate_accuracy(model, current_data)
+    if accuracy < 0.90:
+        trigger_alert("Model accuracy dropped. Initiate retraining.")
+    fairness = check_fairness(model, current_data)
+    if fairness > 0.1:
+        trigger_alert("Bias detected in production. Review data.")
