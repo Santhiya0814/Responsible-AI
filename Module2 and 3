@@ -1,0 +1,54 @@
+//Implementing Policies
+import logging
+from typing import Union
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+def process_user_data(user_id: int, age: Union[int, str]) -> bool:
+    try:
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise ValueError("Invalid user_id")
+        age = int(age) 
+        logger.info(f"Processing user {user_id} with age {age}")
+        return True
+
+    except ValueError as e:
+        logger.error(f"Value Error: {e}")
+        return False
+    except Exception as e:
+        logger.critical(f"Unexpected error: {e}")
+        return False
+process_user_data(101, "25") 
+process_user_data(-1, "25")   
+process_user_data(102, "twenty") 
+
+//SHAP
+import shap
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import load_breast_cancer
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = pd.Series(data.target)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+clf = RandomForestClassifier(random_state=42).fit(X_train, y_train)
+explainer = shap.Explainer(clf, X_train)
+shap_values = explainer(X_test)
+shap.plots.bar(shap_values)
+
+//LIME
+from lime.lime_tabular import LimeTabularExplainer
+lime_exp = LimeTabularExplainer(
+    X_train.values,
+    feature_names=list(X.columns),
+    class_names=["benign", "malignant"],
+    mode="classification"
+)
+i = 0
+exp = lime_exp.explain_instance(X_test.iloc[i].values, clf.predict_proba)
+exp.show_in_notebook()
+print(exp.as_list())
+
